@@ -311,7 +311,7 @@ def get_sections_and_signature_and_needs(
 
         # Check if the need is nested inside another need (so part of its content)
         # and we only want to find our parent and not add the grands, too.
-        if isinstance(current_node, Need) and len(parent_needs) == 0:
+        if current_node is not need_node and isinstance(current_node, Need) and len(parent_needs) == 0:
             parent_needs.append(current_node["refid"])  # Store the need id, not more
 
         current_node = getattr(current_node, "parent", None)
@@ -348,9 +348,18 @@ def analyse_need_locations(app: Sphinx, doctree: nodes.document) -> None:
         need_info = needs[need_id]
 
         # Fetch values from need
-        # Start from the target node, which is a sibling of the current need node
+        # Start from the target node, which is a sibling of the current need node,
+        # or from the need node itself if there is no target (e.g. for a hidden need)
+        target = previous_sibling(need_node)
+        start_node = (
+            target
+            if target is not None
+            and isinstance(target, nodes.target)
+            and target.get("refid") == need_id
+            else need_node
+        )
         sections, signature, parent_needs = get_sections_and_signature_and_needs(
-            previous_sibling(need_node)
+            start_node
         )
 
         # append / set values from need
