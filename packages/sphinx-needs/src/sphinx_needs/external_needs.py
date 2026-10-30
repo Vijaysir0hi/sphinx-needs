@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import urlsplit
 
 import requests
 from requests_file import FileAdapter
@@ -109,7 +110,10 @@ def load_external_needs(
             if target_tpl:
                 # render jinja content
                 cal_target_url = target_tpl.render({"need": need})
-                external_url = f"{source['base_url']}/{cal_target_url}"
+                if urlsplit(cal_target_url).scheme:
+                    external_url = cal_target_url
+                else:
+                    external_url = f"{source['base_url']}/{cal_target_url}"
             else:
                 external_url = f"{source['base_url']}/{need.get('docname', '__error__')}.html#{key}"
 

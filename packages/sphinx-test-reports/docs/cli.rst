@@ -118,10 +118,11 @@ fields the converter adds
 beyond the directive's (``result_text``, ``remote_url``) are registered by the
 extension, so ``needimport`` keeps them.
 
-Every need carries the synthesized source URL twice: as ``external_url``, which
-Sphinx-Needs uses when rendering a link to an external need, and as a plain
-``remote_url`` field, so needs imported as *local* needs keep a clickable link
-through a ``needs_string_links`` entry.
+Every need carries the synthesized source URL as a plain ``remote_url`` field.
+When used through ``needs_external_needs``, configure
+``target_url = "{{need.remote_url}}"`` so that Sphinx-Needs links directly to
+the source URL; for needs imported as *local* needs (``needimport``), configure
+a ``needs_string_links`` entry on ``remote_url``.
 
 Linking test cases to requirements
 ----------------------------------

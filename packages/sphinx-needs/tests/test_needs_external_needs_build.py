@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -433,3 +434,67 @@ def test_external_needs_target_url(test_app):
     assert "target_url" not in external_needs[3]
     assert "EXT_DEFAULT_TEST_01" in html
     assert "http://my_company.com/docs/v1/index.html#TEST_01" in html
+
+
+@pytest.mark.parametrize(
+    "test_app",
+    [
+        {
+            "buildername": "html",
+            "files": [
+                ("index.rst", "Test\n====\n"),
+                (
+                    "conf.py",
+                    """
+extensions = ["sphinx_needs"]
+needs_fields = {"remote_url": {"nullable": True}}
+needs_external_needs = [{
+    'base_url': 'http://example.com/docs/',
+    'target_url': '{{need.remote_url}}',
+    'json_path': 'needs.json',
+}]
+needs_build_json = True
+""",
+                ),
+            ],
+        }
+    ],
+    indirect=True,
+)
+def test_external_needs_absolute_target_url(test_app):
+    """An absolute target_url is used as-is instead of being prefixed by base_url (#2389)."""
+    json_path = Path(test_app.srcdir) / "needs.json"
+    json_path.write_text(
+        json.dumps(
+            {
+                "current_version": "1.0",
+                "project": "foo",
+                "versions": {
+                    "1.0": {
+                        "needs": {
+                            "EXT_1": {
+                                "id": "EXT_1",
+                                "type": "req",
+                                "title": "External Requirement",
+                                "remote_url": "https://github.com/org/repo/blob/main/test.py#L12",
+                                "docname": "index",
+                            }
+                        }
+                    }
+                },
+            }
+        )
+    )
+
+    app = test_app
+    app.build()
+    assert app.statuscode == 0
+    from sphinx_needs.data import SphinxNeedsData
+
+    needs = SphinxNeedsData(app.env).get_needs_view()
+    assert "EXT_1" in needs
+    assert (
+        needs["EXT_1"]["external_url"]
+        == "https://github.com/org/repo/blob/main/test.py#L12"
+    )
+
